@@ -176,8 +176,8 @@ function App() {
 
     const matchesStatus =
       statusFilter === "All" ||
-      (student.placementStatus || "").toLowerCase() ===
-        statusFilter.toLowerCase();
+      (student.placementStatus || "").trim().toLowerCase() ===
+        statusFilter.trim().toLowerCase();
 
     return matchesSearch && matchesStatus;
   });
@@ -325,7 +325,13 @@ function App() {
 
               <p>
                 Status:{" "}
-                <span className="status-badge">
+                <span
+                  className={`status-badge ${
+                    student.placementStatus?.trim().toLowerCase() === "placed"
+                      ? "placed"
+                      : "not-placed"
+                  }`}
+                >
                   {student.placementStatus || "Not Set"}
                 </span>
               </p>
