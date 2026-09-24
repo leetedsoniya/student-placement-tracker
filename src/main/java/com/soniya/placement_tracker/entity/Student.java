@@ -4,6 +4,11 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 @Entity
 public class Student {
@@ -12,14 +17,28 @@ public class Student {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "Name is required")
     private String name;
-    private String email;
-    private String branch;
-    private double cgpa;
 
+    @NotBlank(message = "Email is required")
+    @Email(message = "Please enter a valid email")
+    private String email;
+
+    @NotBlank(message = "Branch is required")
+    private String branch;
+
+    @NotNull(message = "CGPA is required")
+    @Min(value = 0, message = "CGPA cannot be less than 0")
+    @Max(value = 10, message = "CGPA cannot be greater than 10")
+    private Double cgpa;
+
+    @NotBlank(message = "Placement status is required")
     private String placementStatus;
+
     private String company;
-    private double packageAmount;
+
+    @Min(value = 0, message = "Package cannot be negative")
+    private Double packageAmount;
 
     public Long getId() {
         return id;
@@ -37,7 +56,7 @@ public class Student {
         return branch;
     }
 
-    public double getCgpa() {
+    public Double getCgpa() {
         return cgpa;
     }
 
@@ -49,7 +68,7 @@ public class Student {
         return company;
     }
 
-    public double getPackageAmount() {
+    public Double getPackageAmount() {
         return packageAmount;
     }
 
@@ -69,7 +88,7 @@ public class Student {
         this.branch = branch;
     }
 
-    public void setCgpa(double cgpa) {
+    public void setCgpa(Double cgpa) {
         this.cgpa = cgpa;
     }
 
@@ -81,7 +100,7 @@ public class Student {
         this.company = company;
     }
 
-    public void setPackageAmount(double packageAmount) {
+    public void setPackageAmount(Double packageAmount) {
         this.packageAmount = packageAmount;
     }
 }
