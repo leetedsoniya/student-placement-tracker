@@ -73,6 +73,11 @@ function App() {
       return false;
     }
 
+    if (placementStatus === "Placed" && !company.trim()) {
+      alert("Please enter company name for placed student.");
+      return false;
+    }
+
     return true;
   };
 
