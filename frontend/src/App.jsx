@@ -46,7 +46,9 @@ function App() {
       return false;
     }
 
-    if (!email.includes("@")) {
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailPattern.test(email)) {
       alert("Please enter a valid email.");
       return false;
     }
