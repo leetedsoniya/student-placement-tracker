@@ -61,6 +61,11 @@ function App() {
       return false;
     }
 
+    if (packageAmount && Number(packageAmount) < 0) {
+      alert("Package cannot be negative.");
+      return false;
+    }
+
     if (!placementStatus) {
       alert("Please select placement status.");
       return false;
