@@ -277,6 +277,7 @@ function App() {
             />
 
             <input
+              type="email"
               placeholder="Email"
               value={email}
               onChange={e => setEmail(e.target.value)}
@@ -289,6 +290,10 @@ function App() {
             />
 
             <input
+              type="number"
+              step="0.01"
+              min="0"
+              max="10"
               placeholder="CGPA"
               value={cgpa}
               onChange={e => setCgpa(e.target.value)}
@@ -310,6 +315,9 @@ function App() {
             />
 
             <input
+              type="number"
+              step="0.01"
+              min="0"
               placeholder="Package (LPA)"
               value={packageAmount}
               onChange={e => setPackageAmount(e.target.value)}
