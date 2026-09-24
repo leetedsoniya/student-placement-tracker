@@ -157,6 +157,14 @@ function App() {
   };
 
   const deleteStudent = (id) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this student?"
+    );
+
+    if (!confirmDelete) {
+      return;
+    }
+
     fetch(`http://localhost:8080/students/${id}`, {
       method: "DELETE"
     })
