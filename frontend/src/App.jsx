@@ -34,7 +34,46 @@ function App() {
     setEditingId(null);
   };
 
+  // Form validation
+  const validateForm = () => {
+    if (!name.trim()) {
+      alert("Please enter student name.");
+      return false;
+    }
+
+    if (!email.trim()) {
+      alert("Please enter email.");
+      return false;
+    }
+
+    if (!email.includes("@")) {
+      alert("Please enter a valid email.");
+      return false;
+    }
+
+    if (!branch.trim()) {
+      alert("Please enter branch.");
+      return false;
+    }
+
+    if (!cgpa || Number(cgpa) < 0 || Number(cgpa) > 10) {
+      alert("CGPA must be between 0 and 10.");
+      return false;
+    }
+
+    if (!placementStatus) {
+      alert("Please select placement status.");
+      return false;
+    }
+
+    return true;
+  };
+
   const addStudent = () => {
+    if (!validateForm()) {
+      return;
+    }
+
     const newStudent = {
       name,
       email,
@@ -72,6 +111,10 @@ function App() {
   };
 
   const updateStudent = () => {
+    if (!validateForm()) {
+      return;
+    }
+
     const updatedStudent = {
       name,
       email,
@@ -231,11 +274,14 @@ function App() {
               onChange={e => setCgpa(e.target.value)}
             />
 
-            <input
-              placeholder="Placement Status (Placed / Not Placed)"
+            <select
               value={placementStatus}
               onChange={e => setPlacementStatus(e.target.value)}
-            />
+            >
+              <option value="">Select Placement Status</option>
+              <option value="Placed">Placed</option>
+              <option value="Not Placed">Not Placed</option>
+            </select>
 
             <input
               placeholder="Company"
