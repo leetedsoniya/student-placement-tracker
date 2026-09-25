@@ -5,8 +5,12 @@ function App() {
   const [students, setStudents] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -16,12 +20,36 @@ function App() {
   const [company, setCompany] = useState("");
   const [packageAmount, setPackageAmount] = useState("");
 
-  useEffect(() => {
+  // Load students
+  const loadStudents = () => {
+    setLoading(true);
+
     fetch("http://localhost:8080/students")
-      .then(response => response.json())
-      .then(data => setStudents(data));
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to load students");
+        }
+
+        return response.json();
+      })
+      .then((data) => {
+        setStudents(data);
+        setError("");
+        setLoading(false);
+      })
+      .catch(() => {
+        setError(
+          "Unable to load students. Please make sure the backend is running."
+        );
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    loadStudents();
   }, []);
 
+  // Clear form
   const clearForm = () => {
     setName("");
     setEmail("");
@@ -30,11 +58,11 @@ function App() {
     setPlacementStatus("");
     setCompany("");
     setPackageAmount("");
-    setShowForm(false);
     setEditingId(null);
+    setShowForm(false);
   };
 
-  // Form validation
+  // Validation
   const validateForm = () => {
     if (!name.trim()) {
       alert("Please enter student name.");
@@ -63,11 +91,6 @@ function App() {
       return false;
     }
 
-    if (packageAmount && Number(packageAmount) < 0) {
-      alert("Package cannot be negative.");
-      return false;
-    }
-
     if (!placementStatus) {
       alert("Please select placement status.");
       return false;
@@ -78,22 +101,28 @@ function App() {
       return false;
     }
 
+    if (packageAmount && Number(packageAmount) < 0) {
+      alert("Package cannot be negative.");
+      return false;
+    }
+
     return true;
   };
 
+  // Add student
   const addStudent = () => {
     if (!validateForm()) {
       return;
     }
 
     const newStudent = {
-      name,
-      email,
-      branch,
+      name: name.trim(),
+      email: email.trim(),
+      branch: branch.trim(),
       cgpa: Number(cgpa),
-      placementStatus,
-      company,
-      packageAmount: Number(packageAmount)
+      placementStatus: placementStatus,
+      company: company.trim(),
+      packageAmount: packageAmount ? Number(packageAmount) : 0
     };
 
     fetch("http://localhost:8080/students", {
@@ -103,38 +132,60 @@ function App() {
       },
       body: JSON.stringify(newStudent)
     })
-      .then(response => response.json())
-      .then(data => {
-        setStudents([...students, data]);
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to add student");
+        }
+
+        return response.json();
+      })
+      .then((data) => {
+        setStudents((previousStudents) => [
+          ...previousStudents,
+          data
+        ]);
+
         clearForm();
+      })
+      .catch(() => {
+        alert("Unable to add student.");
       });
   };
 
+  // Start editing
   const startEdit = (student) => {
     setEditingId(student.id);
-    setName(student.name);
-    setEmail(student.email);
-    setBranch(student.branch);
-    setCgpa(student.cgpa);
+
+    setName(student.name || "");
+    setEmail(student.email || "");
+    setBranch(student.branch || "");
+    setCgpa(student.cgpa ?? "");
     setPlacementStatus(student.placementStatus || "");
     setCompany(student.company || "");
-    setPackageAmount(student.packageAmount || "");
+    setPackageAmount(student.packageAmount ?? "");
+
     setShowForm(true);
   };
 
+  // Update student
   const updateStudent = () => {
     if (!validateForm()) {
       return;
     }
 
+    if (!editingId) {
+      alert("No student selected for editing.");
+      return;
+    }
+
     const updatedStudent = {
-      name,
-      email,
-      branch,
+      name: name.trim(),
+      email: email.trim(),
+      branch: branch.trim(),
       cgpa: Number(cgpa),
-      placementStatus,
-      company,
-      packageAmount: Number(packageAmount)
+      placementStatus: placementStatus,
+      company: company.trim(),
+      packageAmount: packageAmount ? Number(packageAmount) : 0
     };
 
     fetch(`http://localhost:8080/students/${editingId}`, {
@@ -144,18 +195,31 @@ function App() {
       },
       body: JSON.stringify(updatedStudent)
     })
-      .then(response => response.json())
-      .then(data => {
-        setStudents(
-          students.map(student =>
-            student.id === editingId ? data : student
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to update student");
+        }
+
+        return response.json();
+      })
+      .then((updatedStudentFromServer) => {
+        setStudents((previousStudents) =>
+          previousStudents.map((student) =>
+            student.id === editingId
+              ? updatedStudentFromServer
+              : student
           )
         );
 
         clearForm();
+      })
+      .catch((error) => {
+        console.error(error);
+        alert("Unable to update student.");
       });
   };
 
+  // Delete student
   const deleteStudent = (id) => {
     const confirmDelete = window.confirm(
       "Are you sure you want to delete this student?"
@@ -168,28 +232,37 @@ function App() {
     fetch(`http://localhost:8080/students/${id}`, {
       method: "DELETE"
     })
-      .then(() => {
-        setStudents(
-          students.filter(student => student.id !== id)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to delete student");
+        }
+
+        setStudents((previousStudents) =>
+          previousStudents.filter((student) => student.id !== id)
         );
+      })
+      .catch(() => {
+        alert("Unable to delete student.");
       });
   };
 
+  // Summary
   const totalStudents = students.length;
 
   const placedStudents = students.filter(
-    student =>
+    (student) =>
       student.placementStatus &&
       student.placementStatus.trim().toLowerCase() === "placed"
   ).length;
 
   const notPlacedStudents = students.filter(
-    student =>
+    (student) =>
       !student.placementStatus ||
       student.placementStatus.trim().toLowerCase() !== "placed"
   ).length;
 
-  const filteredStudents = students.filter(student => {
+  // Search + filter
+  const filteredStudents = students.filter((student) => {
     const matchesSearch = student.name
       .toLowerCase()
       .includes(search.toLowerCase());
@@ -212,179 +285,245 @@ function App() {
 
       <main>
 
-        {/* Search and Filter */}
-        <div className="search-filter">
+        {loading && <p>Loading students...</p>}
 
-          <input
-            className="search-box"
-            placeholder="Search student by name..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
+        {error && <p>{error}</p>}
 
-          <select
-            className="status-filter"
-            value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value)}
-          >
-            <option value="All">All Students</option>
-            <option value="Placed">Placed</option>
-            <option value="Not Placed">Not Placed</option>
-          </select>
+        {!loading && !error && (
+          <>
 
-        </div>
+            {/* Search and Filter */}
 
-        {/* Summary */}
-        <div className="summary">
+            <div className="search-filter">
 
-          <div className="summary-card">
-            <h3>Total Students</h3>
-            <p>{totalStudents}</p>
-          </div>
+              <input
+                className="search-box"
+                placeholder="Search student by name..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
 
-          <div className="summary-card">
-            <h3>Placed</h3>
-            <p>{placedStudents}</p>
-          </div>
+              <select
+                className="status-filter"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="All">All Students</option>
+                <option value="Placed">Placed</option>
+                <option value="Not Placed">Not Placed</option>
+              </select>
 
-          <div className="summary-card">
-            <h3>Not Placed</h3>
-            <p>{notPlacedStudents}</p>
-          </div>
+            </div>
 
-        </div>
+            {/* Summary */}
 
-        <div className="top-bar">
-          <h2>Students</h2>
+            <div className="summary">
 
-          <button onClick={() => setShowForm(true)}>
-            + Add Student
-          </button>
-        </div>
+              <div className="summary-card">
+                <h3>Total Students</h3>
+                <p>{totalStudents}</p>
+              </div>
 
-        {/* Form */}
-        {showForm && (
-          <div className="form">
+              <div className="summary-card">
+                <h3>Placed</h3>
+                <p>{placedStudents}</p>
+              </div>
 
-            <h3>
-              {editingId ? "Edit Student" : "Add New Student"}
-            </h3>
+              <div className="summary-card">
+                <h3>Not Placed</h3>
+                <p>{notPlacedStudents}</p>
+              </div>
 
-            <input
-              placeholder="Name"
-              value={name}
-              onChange={e => setName(e.target.value)}
-            />
+            </div>
 
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-            />
+            {/* Top Bar */}
 
-            <input
-              placeholder="Branch"
-              value={branch}
-              onChange={e => setBranch(e.target.value)}
-            />
+            <div className="top-bar">
 
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              max="10"
-              placeholder="CGPA"
-              value={cgpa}
-              onChange={e => setCgpa(e.target.value)}
-            />
+              <h2>Students</h2>
 
-            <select
-              value={placementStatus}
-              onChange={e => setPlacementStatus(e.target.value)}
-            >
-              <option value="">Select Placement Status</option>
-              <option value="Placed">Placed</option>
-              <option value="Not Placed">Not Placed</option>
-            </select>
-
-            <input
-              placeholder="Company"
-              value={company}
-              onChange={e => setCompany(e.target.value)}
-            />
-
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              placeholder="Package (LPA)"
-              value={packageAmount}
-              onChange={e => setPackageAmount(e.target.value)}
-            />
-
-            <button
-              onClick={editingId ? updateStudent : addStudent}
-            >
-              {editingId ? "Update Student" : "Add Student"}
-            </button>
-
-            <button onClick={clearForm}>
-              Cancel
-            </button>
-
-          </div>
-        )}
-
-        {/* Students */}
-        <div className="students">
-
-          {filteredStudents.map(student => (
-
-            <div className="student-card" key={student.id}>
-
-              <h3>{student.name}</h3>
-
-              <p>{student.email}</p>
-
-              <p>Branch: {student.branch}</p>
-
-              <p>CGPA: {student.cgpa}</p>
-
-              <p>
-                Status:{" "}
-                <span
-                  className={`status-badge ${
-                    student.placementStatus?.trim().toLowerCase() === "placed"
-                      ? "placed"
-                      : "not-placed"
-                  }`}
-                >
-                  {student.placementStatus || "Not Set"}
-                </span>
-              </p>
-
-              <p>
-                Company: {student.company || "Not Set"}
-              </p>
-
-              <p>
-                Package: {student.packageAmount || 0} LPA
-              </p>
-
-              <button onClick={() => startEdit(student)}>
-                Edit
-              </button>
-
-              <button onClick={() => deleteStudent(student.id)}>
-                Delete
+              <button
+                onClick={() => {
+                  clearForm();
+                  setShowForm(true);
+                }}
+              >
+                + Add Student
               </button>
 
             </div>
 
-          ))}
+            {/* Form */}
 
-        </div>
+            {showForm && (
+              <div className="form">
+
+                <h3>
+                  {editingId ? "Edit Student" : "Add New Student"}
+                </h3>
+
+                <input
+                  placeholder="Name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+
+                <input
+                  placeholder="Branch"
+                  value={branch}
+                  onChange={(e) => setBranch(e.target.value)}
+                />
+
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="10"
+                  placeholder="CGPA"
+                  value={cgpa}
+                  onChange={(e) => setCgpa(e.target.value)}
+                />
+
+                <select
+                  value={placementStatus}
+                  onChange={(e) =>
+                    setPlacementStatus(e.target.value)
+                  }
+                >
+                  <option value="">
+                    Select Placement Status
+                  </option>
+
+                  <option value="Placed">
+                    Placed
+                  </option>
+
+                  <option value="Not Placed">
+                    Not Placed
+                  </option>
+                </select>
+
+                <input
+                  placeholder="Company"
+                  value={company}
+                  onChange={(e) => setCompany(e.target.value)}
+                />
+
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Package (LPA)"
+                  value={packageAmount}
+                  onChange={(e) =>
+                    setPackageAmount(e.target.value)
+                  }
+                />
+
+                <button
+                  onClick={
+                    editingId
+                      ? updateStudent
+                      : addStudent
+                  }
+                >
+                  {editingId
+                    ? "Update Student"
+                    : "Add Student"}
+                </button>
+
+                <button onClick={clearForm}>
+                  Cancel
+                </button>
+
+              </div>
+            )}
+
+            {/* Student Cards */}
+
+            <div className="students">
+
+              {filteredStudents.length === 0 && (
+                <p>No students found.</p>
+              )}
+
+              {filteredStudents.map((student) => (
+
+                <div
+                  className="student-card"
+                  key={student.id}
+                >
+
+                  <h3>{student.name}</h3>
+
+                  <p>{student.email}</p>
+
+                  <p>
+                    Branch: {student.branch}
+                  </p>
+
+                  <p>
+                    CGPA: {student.cgpa}
+                  </p>
+
+                  <p>
+                    Status:{" "}
+
+                    <span
+                      className={`status-badge ${
+                        student.placementStatus
+                          ?.trim()
+                          .toLowerCase() === "placed"
+                          ? "placed"
+                          : "not-placed"
+                      }`}
+                    >
+                      {student.placementStatus ||
+                        "Not Set"}
+                    </span>
+                  </p>
+
+                  <p>
+                    Company:{" "}
+                    {student.company || "Not Set"}
+                  </p>
+
+                  <p>
+                    Package:{" "}
+                    {student.packageAmount || 0} LPA
+                  </p>
+
+                  <button
+                    onClick={() =>
+                      startEdit(student)
+                    }
+                  >
+                    Edit
+                  </button>
+
+                  <button
+                    onClick={() =>
+                      deleteStudent(student.id)
+                    }
+                  >
+                    Delete
+                  </button>
+
+                </div>
+
+              ))}
+
+            </div>
+
+          </>
+        )}
 
       </main>
 

@@ -1,7 +1,5 @@
 package com.soniya.placement_tracker.service;
 
-
-
 import com.soniya.placement_tracker.entity.Student;
 import com.soniya.placement_tracker.repository.StudentRepository;
 import org.springframework.stereotype.Service;
@@ -24,21 +22,27 @@ public class StudentService {
     public Student saveStudent(Student student) {
         return studentRepository.save(student);
     }
-        public Student updateStudent(Long id, Student student) {
-    Student existingStudent = studentRepository.findById(id).orElseThrow();
 
-    existingStudent.setName(student.getName());
-    existingStudent.setEmail(student.getEmail());
-    existingStudent.setBranch(student.getBranch());
-    existingStudent.setCgpa(student.getCgpa());
+    public Student updateStudent(Long id, Student student) {
 
-    return studentRepository.save(existingStudent);
-}
- public void deleteStudent(Long id){
-    studentRepository.deleteById(id);
- }
-        
+        Student existingStudent = studentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        existingStudent.setName(student.getName());
+        existingStudent.setEmail(student.getEmail());
+        existingStudent.setBranch(student.getBranch());
+        existingStudent.setCgpa(student.getCgpa());
+        existingStudent.setPlacementStatus(student.getPlacementStatus());
+        existingStudent.setCompany(student.getCompany());
+        existingStudent.setPackageAmount(student.getPackageAmount());
+
+        return studentRepository.save(existingStudent);
     }
 
+    public void deleteStudent(Long id) {
+        Student student = studentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
 
-
+        studentRepository.delete(student);
+    }
+}
